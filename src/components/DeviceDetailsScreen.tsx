@@ -4,7 +4,6 @@ import { HideConfirmSheet } from "@/components/HideConfirmSheet";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { BluetoothIcon } from "@/components/icons";
 import { usePulseras } from "@/context/PulserasContext";
-import { DEVICE_CATALOG } from "@/lib/mock-catalog";
 import {
   formatRelativeTime,
   formatRssi,
@@ -25,25 +24,26 @@ export function DeviceDetailsScreen({ id }: { id: string }) {
     return () => clearInterval(timer);
   }, []);
 
-  const catalog = DEVICE_CATALOG.find((item) => item.id === id);
-  const hidden = snapshot.hidden.some((item) => item.id === id);
-  const live = ble.getDevice(id);
-
-  if (!catalog) {
+  if (!id) {
     notFound();
     return null;
   }
+
+  const hidden = snapshot.hidden.some((item) => item.id === id);
+  const live = ble.getDevice(id);
+  const remembered = snapshot.devices.find((item) => item.id === id);
+  const hiddenDevice = ble.getHiddenDevice(id);
 
   if (hidden && !live) {
     notFound();
     return null;
   }
 
-  const view = live ?? {
-    ...catalog,
-    rssi: null,
-    lastSeenAt: null,
-  };
+  const view = live ?? remembered ?? hiddenDevice;
+  if (!view) {
+    notFound();
+    return null;
+  }
 
   const proximity = proximityFromRssi(view.rssi);
   const tone = proximityTone(proximity);
@@ -84,7 +84,9 @@ export function DeviceDetailsScreen({ id }: { id: string }) {
         </div>
         <div className="detail-row">
           <span>Protocol</span>
-          <strong>BLE (Bluetooth Low Energy)</strong>
+          <strong>
+            {view.pulserasPeer ? "BLE · Pulseras" : "BLE (Bluetooth Low Energy)"}
+          </strong>
         </div>
       </section>
 

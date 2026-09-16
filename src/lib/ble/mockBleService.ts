@@ -5,19 +5,14 @@ import {
   savePersisted,
   type PersistedState,
 } from "../storage";
-import type { BleService, BleSnapshot, NearbyDevice, PermissionState } from "../types";
-
-const DEFAULT_SNAPSHOT: BleSnapshot = {
-  status: "idle",
-  bluetoothEnabled: true,
-  nearbyPermission: "granted",
-  locationPermission: "granted",
-  devices: [],
-  hidden: [],
-  lastScanAt: null,
-  scanIntervalMs: 5000,
-  startedAt: null,
-};
+import {
+  DEFAULT_SNAPSHOT,
+  type BleService,
+  type BleSnapshot,
+  type NearbyDevice,
+  type PermissionState,
+  type ScanStartResult,
+} from "../types";
 
 function jitter(base: number): number {
   const delta = Math.round((Math.random() - 0.5) * 10);
@@ -34,6 +29,7 @@ export function createMockBleService(): BleService {
   let status: BleSnapshot["status"] = "idle";
   let lastScanAt: number | null = null;
   let startedAt: number | null = null;
+  let lastError: string | null = null;
   let discovered = new Map<string, NearbyDevice>();
   let tick = 0;
   let timer: ReturnType<typeof setInterval> | null = null;
@@ -54,14 +50,24 @@ export function createMockBleService(): BleService {
   function computeSnapshot(): BleSnapshot {
     return {
       status,
+      mode: "mock",
       bluetoothEnabled: persisted.bluetoothEnabled,
       nearbyPermission: persisted.nearbyPermission,
       locationPermission: persisted.locationPermission,
+      scanSupported: true,
+      advertisingSupported: false,
+      advertising: false,
       devices: visibleDevices(),
-      hidden: persisted.hidden.map((item) => ({ ...item })),
+      hidden: persisted.hidden.map((item) => ({
+        id: item.id,
+        hiddenAt: item.hiddenAt,
+        name: item.name ?? "Unknown device",
+        address: item.address ?? "—",
+      })),
       lastScanAt,
       scanIntervalMs: persisted.scanIntervalMs,
       startedAt,
+      lastError,
     };
   }
 
@@ -131,12 +137,59 @@ export function createMockBleService(): BleService {
     timer = setInterval(runTick, interval);
   }
 
-  function canScan(): { ok: true } | { ok: false; reason: "bluetooth" | "permission" } {
-    if (!persisted.bluetoothEnabled) return { ok: false, reason: "bluetooth" };
-    if (persisted.nearbyPermission !== "granted" || persisted.locationPermission !== "granted") {
-      return { ok: false, reason: "permission" };
+  function canScan(): ScanStartResult {
+    if (!persisted.bluetoothEnabled) {
+      lastError = "Bluetooth is off";
+      return { ok: false, reason: "bluetooth", message: lastError };
     }
+    if (persisted.nearbyPermission !== "granted" || persisted.locationPermission !== "granted") {
+      lastError = "Nearby devices permission denied";
+      return { ok: false, reason: "permission", message: lastError };
+    }
+    lastError = null;
     return { ok: true };
+  }
+
+  async function startScanning(): Promise<ScanStartResult> {
+    const allowed = canScan();
+    if (!allowed.ok) {
+      status = "idle";
+      emit();
+      return allowed;
+    }
+    const now = Date.now();
+    status = "scanning";
+    startedAt = now;
+    lastScanAt = now;
+    tick = 0;
+    if (discovered.size === 0) {
+      discoverNext(now);
+    } else {
+      updateExisting(now);
+    }
+    setTimeout(() => {
+      if (status === "scanning") {
+        discoverNext(Date.now());
+        emit();
+      }
+    }, 900);
+    setTimeout(() => {
+      if (status === "scanning") {
+        discoverNext(Date.now());
+        emit();
+      }
+    }, 1800);
+    armTimer();
+    emit();
+    return { ok: true };
+  }
+
+  async function stopScanning(): Promise<void> {
+    status = discovered.size > 0 ? "stopped" : "idle";
+    startedAt = null;
+    lastScanAt = Date.now();
+    clearTimer();
+    emit();
   }
 
   return {
@@ -150,52 +203,38 @@ export function createMockBleService(): BleService {
     getServerSnapshot() {
       return DEFAULT_SNAPSHOT;
     },
-    startScan() {
-      const allowed = canScan();
-      if (!allowed.ok) {
-        status = "idle";
-        emit();
-        return allowed;
-      }
-      const now = Date.now();
-      status = "scanning";
-      startedAt = now;
-      lastScanAt = now;
-      tick = 0;
-      if (discovered.size === 0) {
-        discoverNext(now);
-      } else {
-        updateExisting(now);
-      }
-      setTimeout(() => {
-        if (status === "scanning") {
-          discoverNext(Date.now());
-          emit();
-        }
-      }, 900);
-      setTimeout(() => {
-        if (status === "scanning") {
-          discoverNext(Date.now());
-          emit();
-        }
-      }, 1800);
-      armTimer();
-      emit();
-      return { ok: true };
+    async initializeBluetooth() {},
+    async isBluetoothEnabled() {
+      return persisted.bluetoothEnabled;
     },
-    stopScan() {
-      status = discovered.size > 0 ? "stopped" : "idle";
-      startedAt = null;
-      lastScanAt = Date.now();
-      clearTimer();
+    async requestBluetoothPermissions() {
+      persisted = {
+        ...persisted,
+        nearbyPermission: "granted",
+        locationPermission: "granted",
+      };
+      persist();
       emit();
+      return "granted";
     },
+    startScan: startScanning,
+    stopScan: stopScanning,
+    startScanning,
+    stopScanning,
     hideDevice(id) {
       const device = discovered.get(id) ?? catalogDevice(id, Date.now());
       if (!persisted.hidden.some((item) => item.id === id)) {
         persisted = {
           ...persisted,
-          hidden: [...persisted.hidden, { id, hiddenAt: Date.now() }],
+          hidden: [
+            ...persisted.hidden,
+            {
+              id,
+              hiddenAt: Date.now(),
+              name: device?.name ?? "Unknown device",
+              address: device?.address ?? "—",
+            },
+          ],
         };
         persist();
       }
@@ -232,9 +271,8 @@ export function createMockBleService(): BleService {
       persisted = { ...persisted, bluetoothEnabled: enabled };
       persist();
       if (!enabled && status === "scanning") {
-        status = discovered.size > 0 ? "stopped" : "idle";
-        startedAt = null;
-        clearTimer();
+        void stopScanning();
+        return;
       }
       emit();
     },
@@ -242,9 +280,8 @@ export function createMockBleService(): BleService {
       persisted = { ...persisted, nearbyPermission: state };
       persist();
       if (state !== "granted" && status === "scanning") {
-        status = discovered.size > 0 ? "stopped" : "idle";
-        startedAt = null;
-        clearTimer();
+        void stopScanning();
+        return;
       }
       emit();
     },
@@ -252,9 +289,8 @@ export function createMockBleService(): BleService {
       persisted = { ...persisted, locationPermission: state };
       persist();
       if (state !== "granted" && status === "scanning") {
-        status = discovered.size > 0 ? "stopped" : "idle";
-        startedAt = null;
-        clearTimer();
+        void stopScanning();
+        return;
       }
       emit();
     },
@@ -265,11 +301,12 @@ export function createMockBleService(): BleService {
       emit();
     },
     resetDemo() {
-      persisted = { ...DEFAULT_PERSISTED };
+      persisted = { ...DEFAULT_PERSISTED, anonymousId: persisted.anonymousId };
       persist();
       status = "idle";
       lastScanAt = null;
       startedAt = null;
+      lastError = null;
       tick = 0;
       discovered = new Map();
       clearTimer();
@@ -283,13 +320,32 @@ export function createMockBleService(): BleService {
       return undefined;
     },
     getHiddenDevice(id) {
+      const hidden = persisted.hidden.find((item) => item.id === id);
       const meta = DEVICE_CATALOG.find((item) => item.id === id);
-      if (!meta) return undefined;
+      if (!hidden && !meta) return undefined;
       return {
-        ...meta,
+        id,
+        name: hidden?.name ?? meta?.name ?? "Unknown device",
+        address: hidden?.address ?? meta?.address ?? "—",
         rssi: BASE_RSSI[id] ?? null,
-        lastSeenAt: persisted.hidden.find((item) => item.id === id)?.hiddenAt ?? null,
+        lastSeenAt: hidden?.hiddenAt ?? null,
+        protocol: "BLE",
       };
+    },
+    async openBluetoothSettings() {},
+    async openAppSettings() {},
+    async startAdvertising() {
+      lastError = "BLE advertising is not available in web mock mode.";
+      emit();
+      return { ok: false, reason: "unsupported", message: lastError };
+    },
+    async stopAdvertising() {},
+    isAdvertisingSupported() {
+      return false;
+    },
+    destroy() {
+      clearTimer();
+      listeners.clear();
     },
   };
 }
@@ -299,4 +355,9 @@ let singleton: BleService | null = null;
 export function getMockBleService(): BleService {
   if (!singleton) singleton = createMockBleService();
   return singleton;
+}
+
+export function resetMockBleService(): void {
+  singleton?.destroy();
+  singleton = null;
 }

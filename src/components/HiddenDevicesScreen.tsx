@@ -3,7 +3,6 @@
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { BluetoothIcon } from "@/components/icons";
 import { usePulseras } from "@/context/PulserasContext";
-import { DEVICE_CATALOG } from "@/lib/mock-catalog";
 import { formatRelativeTime } from "@/lib/proximity";
 import { useEffect, useState } from "react";
 
@@ -16,14 +15,11 @@ export function HiddenDevicesScreen() {
     return () => clearInterval(id);
   }, []);
 
-  const items = snapshot.hidden.map((hidden) => {
-    const meta = DEVICE_CATALOG.find((device) => device.id === hidden.id);
-    return {
-      ...hidden,
-      name: meta?.name ?? "Unknown device",
-      address: meta?.address ?? "—",
-    };
-  });
+  const items = snapshot.hidden.map((hidden) => ({
+    ...hidden,
+    name: hidden.name || "Unknown device",
+    address: hidden.address || "—",
+  }));
 
   return (
     <div className="screen-stack">

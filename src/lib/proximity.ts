@@ -1,11 +1,19 @@
 import type { Proximity } from "./types";
 
+/** RSSI bands for qualitative proximity. Tune here; do not treat as meters. */
+export const RSSI_THRESHOLDS = {
+  veryClose: -50,
+  close: -62,
+  nearby: -75,
+  far: -88,
+} as const;
+
 export function proximityFromRssi(rssi: number | null): Proximity {
-  if (rssi == null) return "Unknown";
-  if (rssi >= -50) return "Very close";
-  if (rssi >= -62) return "Close";
-  if (rssi >= -75) return "Nearby";
-  if (rssi >= -88) return "Far";
+  if (rssi == null || !Number.isFinite(rssi)) return "Unknown";
+  if (rssi >= RSSI_THRESHOLDS.veryClose) return "Very close";
+  if (rssi >= RSSI_THRESHOLDS.close) return "Close";
+  if (rssi >= RSSI_THRESHOLDS.nearby) return "Nearby";
+  if (rssi >= RSSI_THRESHOLDS.far) return "Far";
   return "Unknown";
 }
 
