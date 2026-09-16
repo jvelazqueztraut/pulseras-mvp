@@ -10,12 +10,14 @@ export default function PrivacyPage() {
         <div>
           <h2>No data leaves your device</h2>
           <p>
-            This MVP simulates nearby BLE devices locally. Scan results, hidden
-            devices, and settings are stored only in this browser.
+            Scan results, hidden devices, and settings stay on this device.
+            Browser builds use simulated BLE data. The Android app scans local
+            advertisements and does not upload identifiers.
           </p>
           <p>
-            Pulseras does not pair with devices, does not upload identifiers,
-            and does not require an account.
+            Pulseras does not pair with devices, does not require an account,
+            and advertising uses an anonymous local identifier plus a public
+            Pulseras service UUID.
           </p>
         </div>
       </article>

@@ -17,6 +17,18 @@
 /.next/
 /out/
 
+# capacitor / android
+android/app/build/
+android/.gradle/
+android/build/
+android/captures/
+android/local.properties
+android/app/src/main/assets/public/
+*.apk
+*.aab
+*.iml
+.idea/
+
 # production
 /build
 

@@ -4,23 +4,24 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { getMockBleService } from "@/lib/ble/mockBleService";
-import type { BleService, BleSnapshot, NearbyDevice } from "@/lib/types";
+import { getBleService } from "@/lib/ble/factory";
+import type { BleBlockReason, BleService, BleSnapshot, NearbyDevice } from "@/lib/types";
 
-export type HomeBlocker = "bluetooth" | "permission" | null;
+export type HomeBlocker = BleBlockReason | null;
 
 interface PulserasContextValue {
   ble: BleService;
   snapshot: BleSnapshot;
   blocker: HomeBlocker;
   recentlyHidden: NearbyDevice | null;
-  startScan: () => void;
-  stopScan: () => void;
+  startScan: () => Promise<void>;
+  stopScan: () => Promise<void>;
   dismissBlocker: () => void;
   hideDevice: (id: string) => NearbyDevice | undefined;
   undoHide: () => void;
@@ -30,7 +31,7 @@ interface PulserasContextValue {
 const PulserasContext = createContext<PulserasContextValue | null>(null);
 
 export function PulserasProvider({ children }: { children: ReactNode }) {
-  const ble = getMockBleService();
+  const ble = getBleService();
   const snapshot = useSyncExternalStore(
     ble.subscribe,
     ble.getSnapshot,
@@ -39,33 +40,39 @@ export function PulserasProvider({ children }: { children: ReactNode }) {
   const [dismissed, setDismissed] = useState<HomeBlocker>(null);
   const [recentlyHidden, setRecentlyHidden] = useState<NearbyDevice | null>(null);
 
-  const permissionBlocked =
-    snapshot.nearbyPermission !== "granted" || snapshot.locationPermission !== "granted";
-  const blocker: HomeBlocker = !snapshot.bluetoothEnabled
-    ? dismissed === "bluetooth"
-      ? null
-      : "bluetooth"
-    : permissionBlocked
-      ? dismissed === "permission"
-        ? null
-        : "permission"
-      : null;
+  useEffect(() => {
+    void ble.initializeBluetooth();
+  }, [ble]);
 
-  const startScan = useCallback(() => {
-    const result = ble.startScan();
+  const permissionBlocked =
+    snapshot.nearbyPermission !== "granted" ||
+    (snapshot.mode === "mock" && snapshot.locationPermission !== "granted");
+
+  let blocker: HomeBlocker = null;
+  if (!snapshot.scanSupported && snapshot.mode === "native") {
+    blocker = dismissed === "unsupported" ? null : "unsupported";
+  } else if (!snapshot.bluetoothEnabled) {
+    blocker = dismissed === "bluetooth" ? null : "bluetooth";
+  } else if (permissionBlocked) {
+    blocker = dismissed === "permission" ? null : "permission";
+  }
+
+  const startScan = useCallback(async () => {
+    const result = await ble.startScanning();
     if (!result.ok) {
       setDismissed(null);
     }
   }, [ble]);
 
-  const stopScan = useCallback(() => {
-    ble.stopScan();
+  const stopScan = useCallback(async () => {
+    await ble.stopScanning();
   }, [ble]);
 
   const dismissBlocker = useCallback(() => {
-    if (!snapshot.bluetoothEnabled) setDismissed("bluetooth");
+    if (!snapshot.scanSupported && snapshot.mode === "native") setDismissed("unsupported");
+    else if (!snapshot.bluetoothEnabled) setDismissed("bluetooth");
     else setDismissed("permission");
-  }, [snapshot.bluetoothEnabled]);
+  }, [snapshot.bluetoothEnabled, snapshot.mode, snapshot.scanSupported]);
 
   const hideDevice = useCallback(
     (id: string) => {

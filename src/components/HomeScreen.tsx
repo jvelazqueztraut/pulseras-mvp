@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 
 export function HomeScreen() {
   const {
+    ble,
     snapshot,
     blocker,
     recentlyHidden,
@@ -39,7 +40,22 @@ export function HomeScreen() {
     <div className="screen-stack">
       <HomeHeader />
 
-      {blocker === "bluetooth" ? (
+      {blocker === "unsupported" ? (
+        <>
+          <StatusBanner tone="danger">Bluetooth unavailable</StatusBanner>
+          <div className="empty-panel">
+            <EmptyGlyph />
+            <h2 className="empty-title">BLE scanning unsupported</h2>
+            <p className="empty-copy">
+              This device cannot scan for Bluetooth Low Energy advertisements.
+              {snapshot.lastError ? ` ${snapshot.lastError}` : ""}
+            </p>
+            <button type="button" className="btn-ghost" onClick={dismissBlocker}>
+              Dismiss
+            </button>
+          </div>
+        </>
+      ) : blocker === "bluetooth" ? (
         <>
           <StatusBanner tone="danger">Bluetooth is off</StatusBanner>
           <div className="empty-panel">
@@ -49,9 +65,21 @@ export function HomeScreen() {
               Pulseras needs Bluetooth to detect nearby devices. Enable it in
               your device settings.
             </p>
-            <Link href="/settings" className="btn-primary">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => {
+                if (snapshot.mode === "native") void ble.openBluetoothSettings();
+                else ble.setBluetoothEnabled(true);
+              }}
+            >
               Open Bluetooth Settings
-            </Link>
+            </button>
+            {snapshot.mode !== "native" ? (
+              <Link href="/settings" className="btn-ghost">
+                Go to Settings
+              </Link>
+            ) : null}
             <button type="button" className="btn-ghost" onClick={dismissBlocker}>
               Dismiss
             </button>
@@ -67,11 +95,35 @@ export function HomeScreen() {
               Pulseras needs permission to scan for nearby Bluetooth devices.
               Grant access in app settings.
             </p>
-            <Link href="/settings" className="btn-primary">
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => {
+                if (snapshot.mode === "native") void ble.openAppSettings();
+                else void ble.requestBluetoothPermissions();
+              }}
+            >
               Open App Settings
-            </Link>
+            </button>
             <button type="button" className="btn-ghost" onClick={dismissBlocker}>
               Not Now
+            </button>
+          </div>
+        </>
+      ) : blocker === "error" ? (
+        <>
+          <StatusBanner tone="danger">Scan error</StatusBanner>
+          <div className="empty-panel">
+            <EmptyGlyph />
+            <h2 className="empty-title">Unable to scan</h2>
+            <p className="empty-copy">
+              {snapshot.lastError ?? "Bluetooth scanning failed. Try again."}
+            </p>
+            <button type="button" className="btn-primary" onClick={() => void startScan()}>
+              Try again
+            </button>
+            <button type="button" className="btn-ghost" onClick={dismissBlocker}>
+              Dismiss
             </button>
           </div>
         </>
@@ -101,8 +153,12 @@ export function HomeScreen() {
               <p className="empty-copy">
                 Start scanning to detect nearby Bluetooth devices in your
                 vicinity.
+                {snapshot.lastError ? ` ${snapshot.lastError}` : ""}
+                {snapshot.mode === "mock"
+                  ? " Web builds use simulated devices."
+                  : ""}
               </p>
-              <button type="button" className="btn-primary" onClick={startScan}>
+              <button type="button" className="btn-primary" onClick={() => void startScan()}>
                 Start Scanning
               </button>
             </div>

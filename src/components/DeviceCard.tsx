@@ -1,6 +1,7 @@
 "use client";
 
 import { proximityFromRssi, proximityTone } from "@/lib/proximity";
+import { deviceDetailsHref } from "@/lib/navigation";
 import type { NearbyDevice } from "@/lib/types";
 import Link from "next/link";
 import { BluetoothIcon, ChevronRightIcon } from "./icons";
@@ -16,7 +17,7 @@ export function DeviceCard({
   const tone = proximityTone(proximity);
 
   return (
-    <Link href={`/devices/${device.id}`} className="device-card">
+    <Link href={deviceDetailsHref(device.id)} className="device-card">
       <span className="device-glyph" aria-hidden="true">
         <BluetoothIcon className="h-[18px] w-[18px]" />
       </span>

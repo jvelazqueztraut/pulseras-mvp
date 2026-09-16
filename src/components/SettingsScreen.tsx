@@ -28,6 +28,7 @@ export function SettingsScreen() {
     INTERVALS.find((item) => item.ms === snapshot.scanIntervalMs)?.label ??
     `Every ${Math.round(snapshot.scanIntervalMs / 1000)} seconds`;
   const hiddenCount = snapshot.hidden.length;
+  const native = snapshot.mode === "native";
 
   return (
     <div className="screen-stack">
@@ -54,6 +55,47 @@ export function SettingsScreen() {
             subtitle={intervalLabel}
             trailing={<ChevronRightIcon className="h-5 w-5 text-[var(--muted)]" />}
             onClick={() => setIntervalOpen(true)}
+          />
+          <SettingsRow
+            icon={<BluetoothIcon className="h-[18px] w-[18px]" />}
+            title="BLE scanning"
+            subtitle={
+              snapshot.scanSupported
+                ? native
+                  ? "Supported on this device"
+                  : "Simulated in this browser"
+                : "Not supported"
+            }
+            trailing={
+              snapshot.scanSupported ? (
+                <CheckIcon className="h-5 w-5 text-[var(--mint)]" />
+              ) : undefined
+            }
+          />
+          <SettingsRow
+            icon={<WifiIcon className="h-[18px] w-[18px]" />}
+            title="BLE advertising"
+            subtitle={
+              snapshot.advertisingSupported
+                ? snapshot.advertising
+                  ? "Advertising Pulseras UUID"
+                  : "Supported · Off"
+                : native
+                  ? "Not supported on this device"
+                  : "Not available in the browser"
+            }
+            trailing={
+              snapshot.advertisingSupported ? (
+                <Toggle
+                  checked={snapshot.advertising}
+                  label="BLE advertising"
+                  onChange={(next) => {
+                    if (next) void ble.startAdvertising();
+                    else void ble.stopAdvertising();
+                  }}
+                />
+              ) : undefined
+            }
           />
         </div>
       </section>
@@ -86,9 +128,13 @@ export function SettingsScreen() {
             icon={<ShieldIcon className="h-[18px] w-[18px]" />}
             title="Location (coarse)"
             subtitle={
-              snapshot.locationPermission === "granted"
-                ? "Granted (required for BLE)"
-                : "Denied (required for BLE)"
+              native
+                ? snapshot.locationPermission === "granted"
+                  ? "Not required for BLE scan (neverForLocation)"
+                  : "Location services off"
+                : snapshot.locationPermission === "granted"
+                  ? "Granted (required for BLE)"
+                  : "Denied (required for BLE)"
             }
             trailing={
               snapshot.locationPermission === "granted" ? (
@@ -102,7 +148,7 @@ export function SettingsScreen() {
               )
             }
             onClick={
-              snapshot.locationPermission === "granted"
+              snapshot.locationPermission === "granted" && !native
                 ? () => ble.setLocationPermission("denied")
                 : undefined
             }
@@ -159,7 +205,8 @@ export function SettingsScreen() {
               Scan interval
             </h2>
             <p className="mt-2 text-[0.9rem] text-[var(--muted)]">
-              How often Pulseras refreshes nearby mock BLE signals.
+              How often Pulseras refreshes nearby BLE signals. On Android this
+              also controls how quickly stale advertisements leave the list.
             </p>
             <div className="mt-5 grid gap-2">
               {INTERVALS.map((item) => (

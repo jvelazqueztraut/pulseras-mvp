@@ -21,8 +21,9 @@ export default function ProximityPage() {
             <li>Unknown — too faint or incomplete</li>
           </ul>
           <p>
-            Walls, pockets, body position, and radio noise can change the
-            reading even when a device stays in the same place.
+            Walls, pockets, body position, radio noise, and transmit power can
+            change RSSI even when a device stays in the same place. These
+            categories are approximate signal bands, not physical distance.
           </p>
         </div>
       </article>
