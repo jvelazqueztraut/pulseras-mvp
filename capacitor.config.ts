@@ -8,6 +8,9 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  server: {
+    androidScheme: "https",
+  },
   plugins: {
     BluetoothLe: {
       displayStrings: {

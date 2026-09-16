@@ -31,41 +31,15 @@ npm test
 
 ## Capacitor / Android
 
-App id: `app.pulseras.mvp`  
-Display name: Pulseras  
-Web assets: `out/` (Next.js `output: "export"`)
+Packaging, JDK/SDK setup, signing, and `build:apk` flags are documented in
+[ANDROID.md](ANDROID.md).
 
 ```bash
-npm run android:prepare   # next build + cap sync android
-npm run cap:open          # open Android Studio
-# or
-npm run android:open
+npm run build:apk -- --debug    # dist/Pulseras-<version>-debug.apk
+npm run build:apk               # signed release (needs a keystore)
 ```
 
-Sync after web changes:
-
-```bash
-npm run build
-npm run cap:sync
-```
-
-### Debug APK
-
-```bash
-npm run android:apk
-```
-
-The APK is written to:
-
-`android/app/build/outputs/apk/debug/app-debug.apk`
-
-Install on a device:
-
-```bash
-adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-Or use Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+App id: `app.pulseras.mvp`. Web assets: `out/` (Next.js `output: "export"`).
 
 ### Permissions
 
