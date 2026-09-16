@@ -58,6 +58,7 @@ a {
 }
 
 .app-shell {
+  position: relative;
   width: min(100%, 430px);
   min-height: 100dvh;
   padding: 1.35rem 1.2rem 2rem;
@@ -537,12 +538,14 @@ a {
 }
 
 .sheet-root {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 40;
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  overflow: hidden;
+  border-radius: inherit;
 }
 
 .sheet-backdrop {
@@ -554,7 +557,7 @@ a {
 
 .sheet-panel {
   position: relative;
-  width: min(100%, 430px);
+  width: 100%;
   padding: 0.7rem 1.2rem 1.4rem;
   border-radius: 1.6rem 1.6rem 0 0;
   background: #12182a;
