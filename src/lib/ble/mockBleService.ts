@@ -38,6 +38,7 @@ export function createMockBleService(): BleService {
   let tick = 0;
   let timer: ReturnType<typeof setInterval> | null = null;
   const listeners = new Set<() => void>();
+  let cached = computeSnapshot();
 
   function persist() {
     savePersisted(persisted);
@@ -50,7 +51,7 @@ export function createMockBleService(): BleService {
       .map(cloneDevice);
   }
 
-  function snapshot(): BleSnapshot {
+  function computeSnapshot(): BleSnapshot {
     return {
       status,
       bluetoothEnabled: persisted.bluetoothEnabled,
@@ -65,6 +66,7 @@ export function createMockBleService(): BleService {
   }
 
   function emit() {
+    cached = computeSnapshot();
     listeners.forEach((listener) => listener());
   }
 
@@ -142,7 +144,9 @@ export function createMockBleService(): BleService {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    getSnapshot: snapshot,
+    getSnapshot() {
+      return cached;
+    },
     getServerSnapshot() {
       return DEFAULT_SNAPSHOT;
     },
