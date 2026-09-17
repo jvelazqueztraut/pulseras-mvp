@@ -248,13 +248,32 @@ a {
 
 .home-actions {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.65rem;
 }
 
-.home-actions .btn-ghost,
-.home-actions .btn-outline-accent,
-.home-actions .btn-primary {
-  margin-top: 0;
+.home-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.55rem 0.5rem;
+  border-radius: 0.95rem;
+  cursor: pointer;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid rgba(44, 227, 196, 0.4);
+}
+
+.home-action.is-active {
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .btn-danger {

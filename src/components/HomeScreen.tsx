@@ -48,14 +48,23 @@ export function HomeScreen() {
     }
   }
 
-  const advertiseButton = (
-    <button
-      type="button"
-      className={snapshot.advertising ? "btn-ghost" : "btn-outline-accent"}
-      onClick={() => void toggleAdvertising()}
-    >
-      {snapshot.advertising ? "Stop Advertising" : "Start Advertising"}
-    </button>
+  const homeActions = (
+    <div className="home-actions">
+      <button
+        type="button"
+        className={`home-action ${scanning ? "is-active" : ""}`}
+        onClick={() => void (scanning ? stopScan() : startScan())}
+      >
+        {scanning ? "Stop Scanning" : "Start Scanning"}
+      </button>
+      <button
+        type="button"
+        className={`home-action ${snapshot.advertising ? "is-active" : ""}`}
+        onClick={() => void toggleAdvertising()}
+      >
+        {snapshot.advertising ? "Stop Advertising" : "Start Advertising"}
+      </button>
+    </div>
   );
 
   return (
@@ -168,6 +177,8 @@ export function HomeScreen() {
             </StatusBanner>
           )}
 
+          {homeActions}
+
           {devices.length === 0 && !scanning ? (
             <div className="empty-panel">
               <EmptyGlyph />
@@ -195,16 +206,6 @@ export function HomeScreen() {
                         : `${devices.length} devices found`
                       : `${devices.length} devices found`}
                 </p>
-                {scanning && !showRadar ? (
-                  <button type="button" className="btn-chip" onClick={stopScan}>
-                    Stop
-                  </button>
-                ) : null}
-                {stale ? (
-                  <button type="button" className="btn-chip" onClick={() => void startScan()}>
-                    Rescan
-                  </button>
-                ) : null}
               </div>
 
               <ul className="device-list">
@@ -216,17 +217,6 @@ export function HomeScreen() {
               </ul>
             </>
           )}
-
-          <div className="home-actions">
-            <button
-              type="button"
-              className={scanning ? "btn-ghost" : "btn-primary"}
-              onClick={() => void (scanning ? stopScan() : startScan())}
-            >
-              {scanning ? "Stop Scanning" : "Start Scanning"}
-            </button>
-            {advertiseButton}
-          </div>
         </>
       )}
 
