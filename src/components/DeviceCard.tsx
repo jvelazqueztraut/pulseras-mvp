@@ -1,18 +1,12 @@
 "use client";
 
-import { proximityFromRssi, proximityTone } from "@/lib/proximity";
+import { formatRssi, proximityFromRssi, proximityTone } from "@/lib/proximity";
 import { deviceDetailsHref } from "@/lib/navigation";
 import type { NearbyDevice } from "@/lib/types";
 import Link from "next/link";
 import { BluetoothIcon, ChevronRightIcon } from "./icons";
 
-export function DeviceCard({
-  device,
-  relativeTime,
-}: {
-  device: NearbyDevice;
-  relativeTime: string;
-}) {
+export function DeviceCard({ device }: { device: NearbyDevice }) {
   const proximity = proximityFromRssi(device.rssi);
   const tone = proximityTone(proximity);
 
@@ -33,7 +27,7 @@ export function DeviceCard({
             <span className="dot" />
             {proximity}
           </span>
-          <span className="text-[var(--muted)]">{relativeTime}</span>
+          <span className="font-mono text-[var(--muted)]">{formatRssi(device.rssi)}</span>
         </span>
       </span>
       <ChevronRightIcon className="h-5 w-5 shrink-0 text-[var(--muted)]" />

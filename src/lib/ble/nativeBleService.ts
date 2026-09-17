@@ -1,13 +1,8 @@
 import { App } from "@capacitor/app";
 import { BleClient, type ScanResult } from "@capacitor-community/bluetooth-le";
+import { buildAdvertisingOptions, mergeAdvertisingConfig } from "./advertisingConfig";
 import type { AdvertisingPort } from "./advertisingPort";
 import { createNativeAdvertisingPort } from "./nativeAdvertiser";
-import {
-  PULSERAS_BLE_VERSION,
-  PULSERAS_LOCAL_NAME,
-  PULSERAS_MANUFACTURER_ID,
-  PULSERAS_SERVICE_UUID,
-} from "./protocol";
 import {
   filterHiddenDevices,
   mapScanResult,
@@ -117,6 +112,7 @@ export function createNativeBleService(deps?: NativeBleDeps): BleService {
       scanIntervalMs: persisted.scanIntervalMs,
       startedAt,
       lastError,
+      advertisingConfig: persisted.advertising,
     };
   }
 
@@ -246,8 +242,9 @@ export function createNativeBleService(deps?: NativeBleDeps): BleService {
       lastError = null;
       await ble.startEnabledNotifications((enabled) => {
         bluetoothEnabled = enabled;
-        if (!enabled && scanning) {
-          void stopNativeScan();
+        if (!enabled) {
+          if (scanning) void stopNativeScan();
+          if (advertising) void stopAdvertising();
           return;
         }
         emit();
@@ -256,7 +253,6 @@ export function createNativeBleService(deps?: NativeBleDeps): BleService {
         removeAppListener = await deps.listenAppState((state) => {
           if (!state.isActive) {
             void stopNativeScan();
-            if (advertising) void stopAdvertising();
           } else {
             void initializeBluetooth();
           }
@@ -287,12 +283,9 @@ export function createNativeBleService(deps?: NativeBleDeps): BleService {
       return { ok: false, reason: "bluetooth", message: lastError };
     }
     try {
-      await advertiser.start({
-        serviceUuid: PULSERAS_SERVICE_UUID,
-        localName: PULSERAS_LOCAL_NAME,
-        manufacturerId: PULSERAS_MANUFACTURER_ID,
-        manufacturerData: [PULSERAS_BLE_VERSION, ...anonymousIdToBytes(persisted.anonymousId)],
-      });
+      await advertiser.start(
+        buildAdvertisingOptions(persisted.advertising, anonymousIdToBytes(persisted.anonymousId)),
+      );
       advertising = true;
       lastError = null;
       emit();
@@ -320,7 +313,6 @@ export function createNativeBleService(deps?: NativeBleDeps): BleService {
     void App.addListener("appStateChange", (state) => {
       if (!state.isActive) {
         void stopNativeScan();
-        if (advertising) void stopAdvertising();
       } else {
         void initializeBluetooth();
       }
@@ -456,6 +448,17 @@ export function createNativeBleService(deps?: NativeBleDeps): BleService {
     stopAdvertising,
     isAdvertisingSupported() {
       return advertisingSupported;
+    },
+    setAdvertisingConfig(config) {
+      persisted = {
+        ...persisted,
+        advertising: mergeAdvertisingConfig(persisted.advertising, config),
+      };
+      persist();
+      emit();
+      if (advertising) {
+        void startAdvertising();
+      }
     },
     destroy() {
       void stopNativeScan();

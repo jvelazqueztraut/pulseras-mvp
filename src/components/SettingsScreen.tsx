@@ -29,6 +29,13 @@ export function SettingsScreen() {
     `Every ${Math.round(snapshot.scanIntervalMs / 1000)} seconds`;
   const hiddenCount = snapshot.hidden.length;
   const native = snapshot.mode === "native";
+  const advertisingSubtitle = snapshot.advertisingSupported
+    ? snapshot.advertising
+      ? "Advertising · Configure payload"
+      : "Supported · Configure payload"
+    : native
+      ? "Not supported on this device"
+      : "Android only · Configure payload";
 
   return (
     <div className="screen-stack">
@@ -75,27 +82,9 @@ export function SettingsScreen() {
           <SettingsRow
             icon={<WifiIcon className="h-[18px] w-[18px]" />}
             title="BLE advertising"
-            subtitle={
-              snapshot.advertisingSupported
-                ? snapshot.advertising
-                  ? "Advertising Pulseras UUID"
-                  : "Supported · Off"
-                : native
-                  ? "Not supported on this device"
-                  : "Not available in the browser"
-            }
-            trailing={
-              snapshot.advertisingSupported ? (
-                <Toggle
-                  checked={snapshot.advertising}
-                  label="BLE advertising"
-                  onChange={(next) => {
-                    if (next) void ble.startAdvertising();
-                    else void ble.stopAdvertising();
-                  }}
-                />
-              ) : undefined
-            }
+            subtitle={advertisingSubtitle}
+            trailing={<ChevronRightIcon className="h-5 w-5 text-[var(--muted)]" />}
+            href="/settings/advertising"
           />
         </div>
       </section>

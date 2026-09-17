@@ -4,12 +4,7 @@ import { unsupportedAdvertising } from "./advertisingPort";
 
 interface NativeAdvertiserPlugin {
   isSupported(): Promise<{ supported: boolean }>;
-  start(options: {
-    serviceUuid: string;
-    localName: string;
-    manufacturerId: number;
-    manufacturerData: number[];
-  }): Promise<void>;
+  start(options: AdvertisingOptions): Promise<void>;
   stop(): Promise<void>;
 }
 

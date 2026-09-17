@@ -81,7 +81,35 @@ describe("native BLE service", () => {
     expect(service.isAdvertisingSupported()).toBe(true);
     const started = await service.startAdvertising();
     expect(started.ok).toBe(true);
-    expect(advertiser.start).toHaveBeenCalled();
+    expect(advertiser.start).toHaveBeenCalledWith(
+      expect.objectContaining({
+        includeServiceUuid: true,
+        includeManufacturerData: false,
+      }),
+    );
+    service.destroy();
+  });
+
+  it("surfaces advertising start failures", async () => {
+    const { service, advertiser } = makeBle();
+    advertiser.start.mockRejectedValueOnce(new Error("Advertise packet is too large."));
+    await service.initializeBluetooth();
+    const started = await service.startAdvertising();
+    expect(started.ok).toBe(false);
+    if (!started.ok) {
+      expect(started.reason).toBe("error");
+      expect(started.message).toMatch(/too large/i);
+    }
+    expect(service.getSnapshot().advertising).toBe(false);
+    service.destroy();
+  });
+
+  it("persists advertising configuration", async () => {
+    const { service } = makeBle();
+    await service.initializeBluetooth();
+    service.setAdvertisingConfig({ descriptor: "desk", includeManufacturerData: true });
+    expect(service.getSnapshot().advertisingConfig.descriptor).toBe("desk");
+    expect(service.getSnapshot().advertisingConfig.includeManufacturerData).toBe(true);
     service.destroy();
   });
 });

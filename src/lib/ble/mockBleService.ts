@@ -1,4 +1,5 @@
 import { BASE_RSSI, DEVICE_CATALOG } from "../mock-catalog";
+import { mergeAdvertisingConfig } from "./advertisingConfig";
 import {
   DEFAULT_PERSISTED,
   loadPersisted,
@@ -68,6 +69,7 @@ export function createMockBleService(): BleService {
       scanIntervalMs: persisted.scanIntervalMs,
       startedAt,
       lastError,
+      advertisingConfig: persisted.advertising,
     };
   }
 
@@ -335,13 +337,22 @@ export function createMockBleService(): BleService {
     async openBluetoothSettings() {},
     async openAppSettings() {},
     async startAdvertising() {
-      lastError = "BLE advertising is not available in web mock mode.";
+      lastError =
+        "BLE advertising only works in the Android app. The browser cannot transmit BLE advertisements.";
       emit();
       return { ok: false, reason: "unsupported", message: lastError };
     },
     async stopAdvertising() {},
     isAdvertisingSupported() {
       return false;
+    },
+    setAdvertisingConfig(config) {
+      persisted = {
+        ...persisted,
+        advertising: mergeAdvertisingConfig(persisted.advertising, config),
+      };
+      persist();
+      emit();
     },
     destroy() {
       clearTimer();

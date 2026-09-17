@@ -19,13 +19,10 @@ interface PulserasContextValue {
   ble: BleService;
   snapshot: BleSnapshot;
   blocker: HomeBlocker;
-  recentlyHidden: NearbyDevice | null;
   startScan: () => Promise<void>;
   stopScan: () => Promise<void>;
   dismissBlocker: () => void;
   hideDevice: (id: string) => NearbyDevice | undefined;
-  undoHide: () => void;
-  clearHiddenToast: () => void;
 }
 
 const PulserasContext = createContext<PulserasContextValue | null>(null);
@@ -38,7 +35,6 @@ export function PulserasProvider({ children }: { children: ReactNode }) {
     ble.getServerSnapshot,
   );
   const [dismissed, setDismissed] = useState<HomeBlocker>(null);
-  const [recentlyHidden, setRecentlyHidden] = useState<NearbyDevice | null>(null);
 
   useEffect(() => {
     void ble.initializeBluetooth();
@@ -75,49 +71,21 @@ export function PulserasProvider({ children }: { children: ReactNode }) {
   }, [snapshot.bluetoothEnabled, snapshot.mode, snapshot.scanSupported]);
 
   const hideDevice = useCallback(
-    (id: string) => {
-      const device = ble.hideDevice(id);
-      if (device) setRecentlyHidden(device);
-      return device;
-    },
+    (id: string) => ble.hideDevice(id),
     [ble],
   );
-
-  const undoHide = useCallback(() => {
-    if (!recentlyHidden) return;
-    ble.restoreDevice(recentlyHidden.id);
-    setRecentlyHidden(null);
-  }, [ble, recentlyHidden]);
-
-  const clearHiddenToast = useCallback(() => {
-    setRecentlyHidden(null);
-  }, []);
 
   const value = useMemo(
     () => ({
       ble,
       snapshot,
       blocker,
-      recentlyHidden,
       startScan,
       stopScan,
       dismissBlocker,
       hideDevice,
-      undoHide,
-      clearHiddenToast,
     }),
-    [
-      ble,
-      snapshot,
-      blocker,
-      recentlyHidden,
-      startScan,
-      stopScan,
-      dismissBlocker,
-      hideDevice,
-      undoHide,
-      clearHiddenToast,
-    ],
+    [ble, snapshot, blocker, startScan, stopScan, dismissBlocker, hideDevice],
   );
 
   return <PulserasContext.Provider value={value}>{children}</PulserasContext.Provider>;

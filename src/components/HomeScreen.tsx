@@ -2,7 +2,6 @@
 
 import { DeviceCard } from "@/components/DeviceCard";
 import { EmptyGlyph, ScanningRadar } from "@/components/ScanningRadar";
-import { HideToast } from "@/components/HideToast";
 import { HomeHeader } from "@/components/HomeHeader";
 import { StatusBanner } from "@/components/StatusBanner";
 import { usePulseras } from "@/context/PulserasContext";
@@ -11,22 +10,20 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export function HomeScreen() {
-  const {
-    ble,
-    snapshot,
-    blocker,
-    recentlyHidden,
-    startScan,
-    stopScan,
-    dismissBlocker,
-    undoHide,
-  } = usePulseras();
+  const { ble, snapshot, blocker, startScan, stopScan, dismissBlocker } = usePulseras();
   const [now, setNow] = useState(() => Date.now());
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!notice) return;
+    const id = window.setTimeout(() => setNotice(null), 8000);
+    return () => window.clearTimeout(id);
+  }, [notice]);
 
   const devices = snapshot.devices;
   const scanning = snapshot.status === "scanning";
@@ -35,6 +32,31 @@ export function HomeScreen() {
   const lastScanLabel = snapshot.lastScanAt
     ? formatRelativeTime(snapshot.lastScanAt, now).replace("Just now", "just now")
     : null;
+  const advertisingLabel = snapshot.advertising ? " · Advertising" : "";
+
+  async function toggleAdvertising() {
+    if (snapshot.advertising) {
+      await ble.stopAdvertising();
+      setNotice(null);
+      return;
+    }
+    const result = await ble.startAdvertising();
+    if (!result.ok) {
+      setNotice(result.message ?? "Unable to start BLE advertising.");
+    } else {
+      setNotice(null);
+    }
+  }
+
+  const advertiseButton = (
+    <button
+      type="button"
+      className={snapshot.advertising ? "btn-ghost" : "btn-outline-accent"}
+      onClick={() => void toggleAdvertising()}
+    >
+      {snapshot.advertising ? "Stop Advertising" : "Start Advertising"}
+    </button>
+  );
 
   return (
     <div className="screen-stack">
@@ -132,19 +154,19 @@ export function HomeScreen() {
           {scanning ? (
             <StatusBanner tone="mint">
               {showRadar ? "Scanning for devices..." : "Scanning active"}
+              {advertisingLabel}
             </StatusBanner>
           ) : stale ? (
             <StatusBanner tone="orange">
               Scanning stopped
               {lastScanLabel ? ` · Last scan ${lastScanLabel}` : null}
+              {advertisingLabel}
             </StatusBanner>
           ) : (
-            <StatusBanner tone="idle">Scanning idle</StatusBanner>
+            <StatusBanner tone={snapshot.advertising ? "mint" : "idle"}>
+              {snapshot.advertising ? "Advertising · Scanning idle" : "Scanning idle"}
+            </StatusBanner>
           )}
-
-          {recentlyHidden ? (
-            <HideToast name={recentlyHidden.name} onUndo={undoHide} />
-          ) : null}
 
           {devices.length === 0 && !scanning ? (
             <div className="empty-panel">
@@ -153,7 +175,7 @@ export function HomeScreen() {
               <p className="empty-copy">
                 Start scanning to detect nearby Bluetooth devices in your
                 vicinity.
-                {snapshot.lastError ? ` ${snapshot.lastError}` : ""}
+                {snapshot.lastError && !notice ? ` ${snapshot.lastError}` : ""}
                 {snapshot.mode === "mock"
                   ? " Web builds use simulated devices."
                   : ""}
@@ -161,6 +183,7 @@ export function HomeScreen() {
               <button type="button" className="btn-primary" onClick={() => void startScan()}>
                 Start Scanning
               </button>
+              {advertiseButton}
             </div>
           ) : (
             <>
@@ -191,10 +214,7 @@ export function HomeScreen() {
               <ul className="device-list">
                 {devices.map((device) => (
                   <li key={device.id}>
-                    <DeviceCard
-                      device={device}
-                      relativeTime={formatRelativeTime(device.lastSeenAt, now)}
-                    />
+                    <DeviceCard device={device} />
                   </li>
                 ))}
               </ul>
@@ -204,10 +224,24 @@ export function HomeScreen() {
                   Stop Scanning
                 </button>
               ) : null}
+              {advertiseButton}
             </>
           )}
         </>
       )}
+
+      {notice ? (
+        <div className="action-toast" role="alert">
+          <p className="min-w-0 flex-1 text-[0.9rem] font-medium text-white">{notice}</p>
+          <button
+            type="button"
+            className="text-[0.9rem] font-semibold text-[var(--accent)]"
+            onClick={() => setNotice(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

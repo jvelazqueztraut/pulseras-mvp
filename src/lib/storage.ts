@@ -1,3 +1,6 @@
+import type { AdvertisingConfig } from "./ble/advertisingConfig";
+import { DEFAULT_ADVERTISING_CONFIG, mergeAdvertisingConfig } from "./ble/advertisingConfig";
+
 const STORAGE_KEY = "pulseras:v1";
 
 export interface PersistedState {
@@ -7,6 +10,7 @@ export interface PersistedState {
   scanIntervalMs: number;
   hidden: { id: string; hiddenAt: number; name?: string; address?: string }[];
   anonymousId: string;
+  advertising: AdvertisingConfig;
 }
 
 function createAnonymousId(): string {
@@ -26,6 +30,7 @@ export const DEFAULT_PERSISTED: PersistedState = {
   scanIntervalMs: 5000,
   hidden: [],
   anonymousId: "0000000000000000",
+  advertising: DEFAULT_ADVERTISING_CONFIG,
 };
 
 export function loadPersisted(): PersistedState {
@@ -55,6 +60,7 @@ export function loadPersisted(): PersistedState {
         typeof parsed.anonymousId === "string" && parsed.anonymousId.length >= 8
           ? parsed.anonymousId
           : createAnonymousId(),
+      advertising: mergeAdvertisingConfig(DEFAULT_ADVERTISING_CONFIG, parsed.advertising ?? {}),
     };
     if (!parsed.anonymousId) savePersisted(state);
     return state;
