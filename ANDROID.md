@@ -130,6 +130,24 @@ takes a while; later runs are quick.
 
 `npm run android:apk` is an alias for `npm run build:apk -- --debug`.
 
+### GitHub Actions
+
+Pushing to `main` (and opening a pull request against it) runs
+`.github/workflows/build-apk.yml`. That job uses `--debug`, so it does **not**
+need a keystore.
+
+Pushes to `main` also replace a rolling GitHub Release tagged `debug-latest`.
+Download **Pulseras-debug.apk** from
+[Releases](https://github.com/jvelazqueztraut/pulseras-mvp/releases/latest)
+or directly:
+
+https://github.com/jvelazqueztraut/pulseras-mvp/releases/download/debug-latest/Pulseras-debug.apk
+
+Pull requests only upload a workflow artifact (30 days): **Actions** →
+**Build debug APK** → the run → **Pulseras-debug**. You can also start a run
+from **Actions** with **Run workflow**. Signed release builds are still
+local-only until signing secrets are added.
+
 ### Versioning
 
 `versionName` is the semver from `.env`, set by `--version` or `--bump`.
