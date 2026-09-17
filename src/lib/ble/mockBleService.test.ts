@@ -53,6 +53,17 @@ describe("mock BLE service", () => {
     expect(ble.isAdvertisingSupported()).toBe(false);
     const result = await ble.startAdvertising();
     expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.message).toMatch(/android app/i);
+    }
+    ble.destroy();
+  });
+
+  it("stores advertising configuration in mock mode", () => {
+    const ble = createMockBleService();
+    ble.setAdvertisingConfig({ localName: "Pulse", descriptor: "lab" });
+    expect(ble.getSnapshot().advertisingConfig.localName).toBe("Pulse");
+    expect(ble.getSnapshot().advertisingConfig.descriptor).toBe("lab");
     ble.destroy();
   });
 });

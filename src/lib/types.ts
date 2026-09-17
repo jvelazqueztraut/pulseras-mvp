@@ -1,3 +1,6 @@
+import type { AdvertisingConfig } from "./ble/advertisingConfig";
+import { DEFAULT_ADVERTISING_CONFIG } from "./ble/advertisingConfig";
+
 export type ScanStatus = "idle" | "scanning" | "stopped";
 export type PermissionState = "granted" | "denied" | "prompt";
 export type Proximity = "Very close" | "Close" | "Nearby" | "Far" | "Unknown";
@@ -36,6 +39,7 @@ export interface BleSnapshot {
   scanIntervalMs: number;
   startedAt: number | null;
   lastError: string | null;
+  advertisingConfig: AdvertisingConfig;
 }
 
 export type ScanStartResult =
@@ -68,6 +72,7 @@ export interface BleService {
   startAdvertising(): Promise<ScanStartResult>;
   stopAdvertising(): Promise<void>;
   isAdvertisingSupported(): boolean;
+  setAdvertisingConfig(config: Partial<AdvertisingConfig>): void;
   destroy(): void;
 }
 
@@ -86,4 +91,5 @@ export const DEFAULT_SNAPSHOT: BleSnapshot = {
   scanIntervalMs: 5000,
   startedAt: null,
   lastError: null,
+  advertisingConfig: DEFAULT_ADVERTISING_CONFIG,
 };

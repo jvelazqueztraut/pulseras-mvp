@@ -413,11 +413,41 @@ a {
   color: #7d8ba2;
 }
 
-.hide-toast {
+.hide-toast,
+.action-toast {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.85rem 1rem;
+}
+
+.action-toast {
+  background: var(--danger-bg);
+  border: 1px solid rgba(255, 93, 122, 0.28);
+}
+
+.settings-field {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.95rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 1.15rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.settings-input {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 0;
+  background: transparent;
+  color: white;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  outline: none;
 }
 
 .hide-toast-check {

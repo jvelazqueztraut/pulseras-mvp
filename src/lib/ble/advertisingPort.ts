@@ -1,6 +1,13 @@
 export interface AdvertisingOptions {
   serviceUuid: string;
   localName: string;
+  includeServiceUuid: boolean;
+  includeLocalName: boolean;
+  includeTxPower: boolean;
+  includeManufacturerData: boolean;
+  connectable: boolean;
+  mode: "lowPower" | "balanced" | "lowLatency";
+  txPower: "ultraLow" | "low" | "medium" | "high";
   manufacturerId: number;
   manufacturerData: number[];
 }

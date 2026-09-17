@@ -9,6 +9,7 @@ import {
   upsertDevice,
 } from "./scanMapper";
 import { isPulserasServiceUuid, PULSERAS_SERVICE_UUID } from "./protocol";
+import { DEFAULT_ADVERTISING_CONFIG, buildAdvertisingOptions } from "./advertisingConfig";
 import { unsupportedAdvertising } from "./advertisingPort";
 import type { NearbyDevice } from "../types";
 
@@ -81,11 +82,8 @@ describe("scan mapping and identity", () => {
 describe("advertising capability", () => {
   it("reports unsupported advertising on the web fallback", async () => {
     expect(await unsupportedAdvertising.isSupported()).toBe(false);
-    await expect(unsupportedAdvertising.start({
-      serviceUuid: PULSERAS_SERVICE_UUID,
-      localName: "Pulseras",
-      manufacturerId: 0xffff,
-      manufacturerData: [1],
-    })).rejects.toThrow(/not supported/i);
+    await expect(
+      unsupportedAdvertising.start(buildAdvertisingOptions(DEFAULT_ADVERTISING_CONFIG, [1])),
+    ).rejects.toThrow(/not supported/i);
   });
 });

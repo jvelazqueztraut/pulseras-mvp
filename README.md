@@ -83,9 +83,13 @@ Protocol v1 (no PII):
 - Local advertiser name is not included (avoids the phone’s Bluetooth name)
 - Optional manufacturer payload: company id `0xFFFF` (development), `[version=0x01, 8 anonymous bytes]`
 
-Enable advertising from Settings when the row says it is supported. Test with a second phone running Pulseras (or nRF Connect) and look for that service UUID. If `isMultipleAdvertisementSupported()` is false, Settings shows advertising as unsupported — that is not faked.
+Enable advertising from **Home** (Start Advertising / Stop Advertising). Payload options live under **Settings → BLE advertising**. Failures show a toast on Home instead of leaving the control silently off.
 
-Foreground only: scanning and advertising stop when the app backgrounds. There is no unrestricted background scan.
+Default payload is the Pulseras service UUID only. Manufacturer data (anonymous id + optional descriptor), local name, and TX power are off because a 128-bit UUID plus manufacturer data overflows Android’s 31-byte advertise packet; extras are placed in the scan response when enabled.
+
+Test with a second phone running Pulseras (or nRF Connect) and look for that service UUID. If `isMultipleAdvertisementSupported()` is false, Settings reports advertising as unsupported — that is not faked. The browser cannot transmit advertisements.
+
+Scanning stops when the app backgrounds. Advertising stays running until you stop it or Bluetooth turns off. There is no unrestricted background scan.
 
 ## Architecture
 
