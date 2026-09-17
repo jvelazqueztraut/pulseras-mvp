@@ -26,7 +26,10 @@ import java.util.UUID;
     permissions = {
         @Permission(
             alias = "advertise",
-            strings = { Manifest.permission.BLUETOOTH_ADVERTISE }
+            strings = {
+                Manifest.permission.BLUETOOTH_ADVERTISE,
+                Manifest.permission.BLUETOOTH_CONNECT
+            }
         )
     }
 )
@@ -34,6 +37,7 @@ public class PulserasAdvertiserPlugin extends Plugin {
 
     private BluetoothLeAdvertiser advertiser;
     private AdvertiseCallback callback;
+    private String previousAdapterName;
 
     @PluginMethod
     public void isSupported(PluginCall call) {
@@ -144,6 +148,9 @@ public class PulserasAdvertiserPlugin extends Plugin {
             scanResponse.setIncludeTxPowerLevel(true);
         }
         if (includeLocalName) {
+            if (!applyConfiguredLocalName(call)) {
+                return;
+            }
             scanResponse.setIncludeDeviceName(true);
         }
 
@@ -156,6 +163,7 @@ public class PulserasAdvertiserPlugin extends Plugin {
             @Override
             public void onStartFailure(int errorCode) {
                 callback = null;
+                restoreAdapterName();
                 call.reject(advertiseError(errorCode));
             }
         };
@@ -164,9 +172,11 @@ public class PulserasAdvertiserPlugin extends Plugin {
             advertiser.startAdvertising(settings, primary.build(), scanResponse.build(), callback);
         } catch (SecurityException error) {
             callback = null;
+            restoreAdapterName();
             call.reject("Permission denied for BLE advertising.");
         } catch (Exception error) {
             callback = null;
+            restoreAdapterName();
             call.reject(error.getMessage() != null ? error.getMessage() : "Unable to start BLE advertising.");
         }
     }
@@ -203,6 +213,49 @@ public class PulserasAdvertiserPlugin extends Plugin {
         }
         advertiser = null;
         callback = null;
+        restoreAdapterName();
+    }
+
+    private boolean applyConfiguredLocalName(PluginCall call) {
+        String localName = call.getString("localName");
+        if (localName == null) {
+            return true;
+        }
+        String trimmed = localName.trim();
+        if (trimmed.isEmpty()) {
+            return true;
+        }
+        BluetoothAdapter adapter = resolveAdapter();
+        if (adapter == null) {
+            return true;
+        }
+        try {
+            if (previousAdapterName == null) {
+                previousAdapterName = adapter.getName();
+            }
+            adapter.setName(trimmed);
+            return true;
+        } catch (SecurityException error) {
+            call.reject("Permission denied to set the Bluetooth local name.");
+            return false;
+        }
+    }
+
+    private void restoreAdapterName() {
+        if (previousAdapterName == null) {
+            return;
+        }
+        BluetoothAdapter adapter = resolveAdapter();
+        String restore = previousAdapterName;
+        previousAdapterName = null;
+        if (adapter == null) {
+            return;
+        }
+        try {
+            adapter.setName(restore);
+        } catch (Exception ignored) {
+            // Name is restored best-effort when advertising stops.
+        }
     }
 
     private static int advertiseMode(String mode) {

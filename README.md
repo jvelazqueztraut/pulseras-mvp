@@ -80,7 +80,7 @@ The UI never imports Capacitor directly. `src/lib/ble/factory.ts` selects the se
 Protocol v1 (no PII):
 
 - Service UUID: `8f2a4c10-9b7e-4d31-9c4a-1f6e8b2d0a01`
-- Local advertiser name is not included (avoids the phone’s Bluetooth name)
+- Local advertiser name is off by default. Enabling it in Settings applies the configured local name while advertising, then restores the previous adapter name.
 - Optional manufacturer payload: company id `0xFFFF` (development), `[version=0x01, 8 anonymous bytes]`
 
 Enable advertising from **Home** (Start Advertising / Stop Advertising). Payload options live under **Settings → BLE advertising**. Failures show a toast on Home instead of leaving the control silently off.

@@ -57,6 +57,9 @@ export default function AdvertisingSettingsPage() {
               maxLength={11}
               autoComplete="off"
               onChange={(event) => setLocalName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") (event.target as HTMLInputElement).blur();
+              }}
               onBlur={() => {
                 ble.setAdvertisingConfig({ localName });
                 setLocalName(ble.getSnapshot().advertisingConfig.localName);
@@ -72,6 +75,9 @@ export default function AdvertisingSettingsPage() {
               placeholder="Optional short tag"
               autoComplete="off"
               onChange={(event) => setDescriptor(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") (event.target as HTMLInputElement).blur();
+              }}
               onBlur={() => {
                 ble.setAdvertisingConfig({ descriptor });
                 setDescriptor(ble.getSnapshot().advertisingConfig.descriptor);
@@ -105,7 +111,7 @@ export default function AdvertisingSettingsPage() {
           <SettingsRow
             icon={<span className="text-[0.7rem] font-bold">N</span>}
             title="Include local name"
-            subtitle="Uses the adapter name in the scan response"
+            subtitle="Applies the local name above while advertising"
             trailing={
               <Toggle
                 checked={config.includeLocalName}
