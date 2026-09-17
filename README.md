@@ -39,8 +39,9 @@ npm run build:apk -- --debug    # dist/Pulseras-<version>-debug.apk
 npm run build:apk               # signed release (needs a keystore)
 ```
 
-Pushes to `main` also build that debug APK on GitHub Actions. Download it from
-the run’s **Artifacts** (see [ANDROID.md](ANDROID.md#github-actions)).
+Pushes to `main` also build that debug APK on GitHub Actions and publish it
+as the latest [GitHub Release](https://github.com/jvelazqueztraut/pulseras-mvp/releases/latest)
+(see [ANDROID.md](ANDROID.md#github-actions)).
 
 App id: `app.pulseras.mvp`. Web assets: `out/` (Next.js `output: "export"`).
 

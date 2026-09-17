@@ -134,16 +134,19 @@ takes a while; later runs are quick.
 
 Pushing to `main` (and opening a pull request against it) runs
 `.github/workflows/build-apk.yml`. That job uses `--debug`, so it does **not**
-need a keystore. After the run finishes:
+need a keystore.
 
-1. Open the repo on GitHub → **Actions** → **Build debug APK**.
-2. Open the latest successful run.
-3. Under **Artifacts**, download **Pulseras-debug**. The zip contains
-   `Pulseras-<version>-debug.apk`.
+Pushes to `main` also replace a rolling GitHub Release tagged `debug-latest`.
+Download **Pulseras-debug.apk** from
+[Releases](https://github.com/jvelazqueztraut/pulseras-mvp/releases/latest)
+or directly:
 
-Artifacts are kept for 30 days. You can also start a run from **Actions** with
-**Run workflow**. Signed release builds are still local-only until signing
-secrets are added.
+https://github.com/jvelazqueztraut/pulseras-mvp/releases/download/debug-latest/Pulseras-debug.apk
+
+Pull requests only upload a workflow artifact (30 days): **Actions** →
+**Build debug APK** → the run → **Pulseras-debug**. You can also start a run
+from **Actions** with **Run workflow**. Signed release builds are still
+local-only until signing secrets are added.
 
 ### Versioning
 

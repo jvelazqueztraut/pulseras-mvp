@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apk:
@@ -53,3 +53,23 @@ jobs:
           path: dist/Pulseras-*-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish GitHub Release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          apks=(dist/Pulseras-*-debug.apk)
+          if [ "${#apks[@]}" -ne 1 ]; then
+            echo "Expected exactly one debug APK in dist/, found ${#apks[@]}"
+            exit 1
+          fi
+          cp "${apks[0]}" dist/Pulseras-debug.apk
+          gh release delete debug-latest --cleanup-tag --yes || true
+          gh release create debug-latest dist/Pulseras-debug.apk \
+            --target "$GITHUB_SHA" \
+            --title "Latest debug APK" \
+            --notes "Unsigned debug APK from ${GITHUB_SHA:0:7} on main. Sideload for testing; this is not a Play-signed release. Workflow: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
+            --latest
