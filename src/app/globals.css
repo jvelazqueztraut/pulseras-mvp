@@ -246,6 +246,17 @@ a {
   cursor: not-allowed;
 }
 
+.home-actions {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.home-actions .btn-ghost,
+.home-actions .btn-outline-accent,
+.home-actions .btn-primary {
+  margin-top: 0;
+}
+
 .btn-danger {
   background: var(--danger-bg);
   color: var(--danger);

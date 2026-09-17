@@ -180,10 +180,6 @@ export function HomeScreen() {
                   ? " Web builds use simulated devices."
                   : ""}
               </p>
-              <button type="button" className="btn-primary" onClick={() => void startScan()}>
-                Start Scanning
-              </button>
-              {advertiseButton}
             </div>
           ) : (
             <>
@@ -205,7 +201,7 @@ export function HomeScreen() {
                   </button>
                 ) : null}
                 {stale ? (
-                  <button type="button" className="btn-chip" onClick={startScan}>
+                  <button type="button" className="btn-chip" onClick={() => void startScan()}>
                     Rescan
                   </button>
                 ) : null}
@@ -218,15 +214,19 @@ export function HomeScreen() {
                   </li>
                 ))}
               </ul>
-
-              {showRadar ? (
-                <button type="button" className="btn-ghost" onClick={stopScan}>
-                  Stop Scanning
-                </button>
-              ) : null}
-              {advertiseButton}
             </>
           )}
+
+          <div className="home-actions">
+            <button
+              type="button"
+              className={scanning ? "btn-ghost" : "btn-primary"}
+              onClick={() => void (scanning ? stopScan() : startScan())}
+            >
+              {scanning ? "Stop Scanning" : "Start Scanning"}
+            </button>
+            {advertiseButton}
+          </div>
         </>
       )}
 
